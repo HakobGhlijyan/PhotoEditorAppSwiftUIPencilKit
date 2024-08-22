@@ -11,6 +11,7 @@ import PhotosUI
 
 struct Home: View {
     @StateObject private var viewModel = DrawingViewModel()
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
@@ -74,14 +75,6 @@ struct Home: View {
                         
                     }
                 }
-                .sheet(isPresented: $viewModel.showImagePicker,
-                       content: {
-                    ImagePicker(
-                        showPicker: $viewModel.showImagePicker,
-                        imageData: $viewModel.imageData
-                    )
-                    .ignoresSafeArea()
-                })
             }
             
             if viewModel.addNewBox {
@@ -90,7 +83,7 @@ struct Home: View {
                 
                 //TextField
                 TextField("Type Here", text: $viewModel.textBoxes[viewModel.currentIndex].text)
-                    .font(.system(size: 35))
+                    .font(.system(size: 35, weight: viewModel.textBoxes[viewModel.currentIndex].isBold ? .bold : .regular))
                     .preferredColorScheme(.dark)
                     .foregroundStyle(viewModel.textBoxes[viewModel.currentIndex].textColor)
                     .padding()
@@ -98,6 +91,7 @@ struct Home: View {
                 //add and cancel button
                 HStack {
                     Button {
+                        viewModel.textBoxes[viewModel.currentIndex].isAdded = true
                         viewModel.toolPicker.setVisible(true, forFirstResponder: viewModel.canvas)
                         viewModel.canvas.becomeFirstResponder()
                         //closing view
@@ -121,12 +115,36 @@ struct Home: View {
                     }
                 }
                 .overlay {
-                    ColorPicker("", selection: $viewModel.textBoxes[viewModel.currentIndex].textColor)
-                        .labelsHidden()
+                    HStack {
+                        ColorPicker("", selection: $viewModel.textBoxes[viewModel.currentIndex].textColor)
+                            .labelsHidden()
+                        
+                        Button(action: {
+                            viewModel.textBoxes[viewModel.currentIndex].isBold.toggle()
+                        }, label: {
+                            Text(viewModel.textBoxes[viewModel.currentIndex].isBold ? "Normal" : "Bold")
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                        })
+                    }
                 }
                 .frame(maxHeight: .infinity, alignment: .top)
             }
         }
+        .sheet(isPresented: $viewModel.showImagePicker,
+               content: {
+            ImagePicker(
+                showPicker: $viewModel.showImagePicker,
+                imageData: $viewModel.imageData
+            )
+            .ignoresSafeArea()
+        })
+        .alert(isPresented: $viewModel.showAlert, content: {
+            Alert(title: Text("Message"),
+                  message: Text(viewModel.message),
+                  dismissButton: .destructive(Text("OK"))
+            )
+        })
     }
 }
 

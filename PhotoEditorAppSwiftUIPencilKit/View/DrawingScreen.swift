@@ -16,7 +16,13 @@ struct DrawingScreen: View {
             GeometryReader { geometry in
                 let size = geometry.size
                 
-                ZStack {
+                DispatchQueue.main.async {
+                    if viewModel.rect == .zero {
+                        viewModel.rect = geometry.frame(in: .global)
+                    }
+                }
+                
+                return ZStack {
                     // UIKIT Pensic Kit Drawing view...
                     CanvasView(
                         canvas: $viewModel.canvas,
@@ -29,9 +35,7 @@ struct DrawingScreen: View {
                     
                     //Displaying textbox
                     ForEach(viewModel.textBoxes) { box in
-                        Text(
-                            viewModel.textBoxes[viewModel.currentIndex].id == box.id && viewModel.addNewBox ? "" : box.text
-                        )
+                        Text(viewModel.textBoxes[viewModel.currentIndex].id == box.id && viewModel.addNewBox ? "" : box.text)
                             .font(.system(size: 30))
                             .fontWeight(box.isBold ? .bold : .none)
                             .foregroundStyle(box.textColor)
@@ -50,17 +54,24 @@ struct DrawingScreen: View {
                                         viewModel.textBoxes[getIndex(textBox: box)].lastOffset = value.translation
                                     })
                             )
+                            .onLongPressGesture {
+                                //close toolbar
+                                viewModel.toolPicker.setVisible(false, forFirstResponder: viewModel.canvas)
+                                viewModel.canvas.resignFirstResponder()
+                                //editing the typed one
+                                viewModel.currentIndex = getIndex(textBox: box)
+                                withAnimation {
+                                    viewModel.addNewBox = true
+                                }
+                            }
                     }
-                    
-                    
                 }
             }
-                    
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
-                    
+                    viewModel.saveImage()
                 }, label: {
                     Text("Save")
                         .buttonStyleCustom()
