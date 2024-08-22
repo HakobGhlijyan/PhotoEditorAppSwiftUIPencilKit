@@ -13,65 +13,119 @@ struct Home: View {
     @StateObject private var viewModel = DrawingViewModel()
 
     var body: some View {
-        NavigationStack {
-            VStack {
-                if let imageFile = UIImage(data: viewModel.imageData) {
-                    Image(uiImage: imageFile)
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    GroupBox {
-                        ContentUnavailableView (
-                            "No Image",
-                            systemImage: "photo",
-                            description: Text("Select an image on \nphoto library or camera")
-                        )
+        ZStack {
+            NavigationStack {
+                VStack {
+                    if let _ = UIImage(data: viewModel.imageData) {
+                        DrawingScreen()
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Button(action: {
+                                        viewModel.cancelImageEditing()
+                                    }, label: {
+                                        Image(systemName: "xmark")
+                                            .buttonStyleCustom()
+                                    })
+                                }
+                            }
+                           
+                    } else {
+                        VStack {
+                            Spacer()
+                            
+                            GroupBox {
+                                ContentUnavailableView (
+                                    "No Image",
+                                    systemImage: "photo",
+                                    description: Text("Select an image on \nphoto library or camera \nPress + button")
+                                )
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 300)
+                            .clipShape(RoundedRectangle(cornerRadius: 25.0))
+                            .padding()
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                viewModel.showImagePicker.toggle()
+                            }, label: {
+                                Image(systemName: "plus")
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                    .padding(4)
+                                    .tint(.primary)
+                                    .frame(height: 50)
+                                    .frame(maxWidth: .infinity)
+                                    .cornerRadius(10)
+                                    .padding(.vertical, 10)
+                                    .background(.ultraThinMaterial)
+                            })
+                        }
                     }
-                    .frame(width: 300, height: 300).clipShape(RoundedRectangle(cornerRadius: 25.0))
                 }
+                .navigationTitle("Image Editor")
+                .environmentObject(viewModel)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        
+                    }
+                    ToolbarItem(placement: .topBarLeading) {
+                        
+                    }
+                }
+                .sheet(isPresented: $viewModel.showImagePicker,
+                       content: {
+                    ImagePicker(
+                        showPicker: $viewModel.showImagePicker,
+                        imageData: $viewModel.imageData
+                    )
+                    .ignoresSafeArea()
+                })
             }
-            .navigationTitle("Image Editor")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        viewModel.showImagePicker.toggle()
-                    }, label: {
-                        Image(systemName: "plus")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .padding(4)
-                            .foregroundStyle(.green)
-                            .frame(width: 30, height: 30)
-                            .background(.white)
-                            .cornerRadius(10)
-                            .shadow(color: .black.opacity(0.07), radius: 5, x: 5, y: 5)
-                            .shadow(color: .black.opacity(0.07), radius: 5, x: -5, y: -5)
-                    })
+            
+            if viewModel.addNewBox {
+                Color.black.opacity(0.75)
+                    .ignoresSafeArea()
+                
+                //TextField
+                TextField("Type Here", text: $viewModel.textBoxes[viewModel.currentIndex].text)
+                    .font(.system(size: 35))
+                    .preferredColorScheme(.dark)
+                    .foregroundStyle(viewModel.textBoxes[viewModel.currentIndex].textColor)
+                    .padding()
+                
+                //add and cancel button
+                HStack {
+                    Button {
+                        viewModel.toolPicker.setVisible(true, forFirstResponder: viewModel.canvas)
+                        viewModel.canvas.becomeFirstResponder()
+                        //closing view
+                        withAnimation {
+                            viewModel.addNewBox = false
+                        }
+                    } label: {
+                        Text("Add")
+                            .fontWeight(.heavy)
+                            .foregroundStyle(.white)
+                            .padding()
+                    }
+                    Spacer()
+                    Button {
+                        viewModel.cancelTextView()
+                    } label: {
+                        Text("Cancel")
+                            .fontWeight(.heavy)
+                            .foregroundStyle(.white)
+                            .padding()
+                    }
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(action: {
-                        viewModel.cancelImageEditing()
-                    }, label: {
-                        Image(systemName: "xmark")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .padding(4)
-                            .foregroundStyle(.red)
-                            .frame(width: 30, height: 30)
-                            .background(.white)
-                            .cornerRadius(10)
-                            .shadow(color: .black.opacity(0.07), radius: 5, x: 5, y: 5)
-                            .shadow(color: .black.opacity(0.07), radius: 5, x: -5, y: -5)
-                    })
+                .overlay {
+                    ColorPicker("", selection: $viewModel.textBoxes[viewModel.currentIndex].textColor)
+                        .labelsHidden()
                 }
+                .frame(maxHeight: .infinity, alignment: .top)
             }
-            .sheet(isPresented: $viewModel.showImagePicker,
-                   content: {
-                ImagePicker(
-                    showPicker: $viewModel.showImagePicker,
-                    imageData: $viewModel.imageData
-                )
-            })
         }
     }
 }
